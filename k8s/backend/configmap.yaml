@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-configmap
+  namespace: myapp
+data:
+  PORT: "3000"
+  GROQ_MODEL: "moonshotai/kimi-k2-instruct-0905"
+  CORS_ORIGIN: "*"
