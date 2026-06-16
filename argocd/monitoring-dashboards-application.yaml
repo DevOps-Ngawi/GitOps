@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: grafana-monitoring
+  name: monitoring-dashboards
   namespace: argocd
 spec:
-  project: default
+  project: myapp-project
   source:
-    chart: grafana
-    repoURL: https://grafana.github.io/helm-charts
-    targetRevision: 11.4.0
+    repoURL: https://github.com/DevOps-Ngawi/GitOps.git
+    targetRevision: HEAD
+    path: k8s/monitoring
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -16,4 +16,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    createNamespace: true
+    syncOptions:
+      - CreateNamespace=true

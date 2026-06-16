@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-k8s-pods
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"  # Label ini dibaca oleh Grafana sidecar secara otomatis
+data:
+  k8s-pods-dashboard.json: |-
+    {
+      "title": "Kubernetes Pods - myapp namespace",
+      "uid": "k8s-pods-myapp",
+      "tags": ["kubernetes", "pods", "myapp"],
+      "timezone": "browser",
+      "schemaVersion": 36,
+      "version": 1,
+      "refresh": "30s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Pod CPU Usage",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{namespace=\"myapp\", container!=\"\"}[5m])",
+              "legendFormat": "{{pod}} - {{container}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Pod Memory Usage",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "container_memory_working_set_bytes{namespace=\"myapp\", container!=\"\"}",
+              "legendFormat": "{{pod}} - {{container}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Pod Restart Count",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 8, "w": 8, "h": 6 },
+          "targets": [
+            {
+              "expr": "kube_pod_container_status_restarts_total{namespace=\"myapp\"}",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Pod Status (Running/Pending/Failed)",
+          "type": "stat",
+          "gridPos": { "x": 8, "y": 8, "w": 8, "h": 6 },
+          "targets": [
+            {
+              "expr": "kube_pod_status_phase{namespace=\"myapp\"}",
+              "legendFormat": "{{pod}} - {{phase}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Network Receive Bytes",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "rate(container_network_receive_bytes_total{namespace=\"myapp\"}[5m])",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Network Transmit Bytes",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "rate(container_network_transmit_bytes_total{namespace=\"myapp\"}[5m])",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    }

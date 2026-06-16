@@ -4,7 +4,7 @@ metadata:
   name: myapp-application
   namespace: argocd
 spec:
-  project: default
+  project: myapp-project
   source:
     repoURL: https://github.com/DevOps-Ngawi/GitOps.git
     targetRevision: HEAD
