@@ -1,0 +1,27 @@
+# Custom Helm Values for kube-prometheus-stack (Prometheus & Grafana)
+
+prometheus:
+  prometheusSpec:
+    # Disable default restriction where Prometheus only discovers ServiceMonitors 
+    # matching the current Helm release name. By setting this to false,
+    # Prometheus will automatically discover ServiceMonitors in ALL namespaces.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    
+    # Allow Prometheus to search all namespaces for ServiceMonitors
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
+
+    # Allow Prometheus to search all namespaces for PodMonitors
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorNamespaceSelector: {}
+    podMonitorSelector: {}
+
+# Configure Grafana sidecar to automatically search all namespaces for
+# dashboards stored inside Kubernetes ConfigMaps with label 'grafana_dashboard=1'
+grafana:
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL

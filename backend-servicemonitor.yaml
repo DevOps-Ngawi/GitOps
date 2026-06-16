@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend-servicemonitor
+  namespace: myapp
+  labels:
+    release: prometheus-stack # Allows Prometheus Operator to auto-discover this ServiceMonitor
+spec:
+  selector:
+    matchLabels:
+      app: backend # Must match the label of the backend Service (Anggota 3)
+  namespaceSelector:
+    matchNames:
+      - myapp
+  endpoints:
+    - port: http # The name of the port in the backend Service definition
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
