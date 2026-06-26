@@ -262,7 +262,7 @@
 
     - name: Install ArgoCD manifests
       ansible.builtin.command:
-        cmd: "/usr/local/bin/kubectl apply -n argocd -f {{ argocd_install_manifest_url }}"
+        cmd: "/usr/local/bin/kubectl apply --server-side --force-conflicts -n argocd -f {{ argocd_install_manifest_url }}"
       become: true
       become_user: "{{ deploy_user }}"
       register: argocd_install
