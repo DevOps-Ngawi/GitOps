@@ -55,6 +55,26 @@
     - name: Reset SSH connection so docker group membership is available
       ansible.builtin.meta: reset_connection
 
+    - name: Check SELinux mode
+      ansible.builtin.command:
+        cmd: getenforce
+      register: selinux_mode
+      changed_when: false
+      failed_when: false
+
+    - name: Set SELinux to permissive for Minikube
+      ansible.builtin.command:
+        cmd: setenforce 0
+      when: selinux_mode.stdout == "Enforcing"
+      changed_when: true
+
+    - name: Persist SELinux permissive mode
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: SELINUX=permissive
+      when: selinux_mode.rc == 0
+
     - name: Install kubectl
       ansible.builtin.get_url:
         url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ binary_arch }}/kubectl"
@@ -91,8 +111,11 @@
         cmd: >
           /usr/local/bin/minikube start
           --driver={{ minikube_driver }}
+          --kubernetes-version={{ minikube_kubernetes_version }}
           --cpus={{ minikube_cpus }}
           --memory={{ minikube_memory }}
+          --wait=all
+          --wait-timeout=15m
       become: true
       become_user: "{{ deploy_user }}"
       register: minikube_start
