@@ -1,0 +1,13 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+
+deploy_user: almalinux
+
+kubectl_version: v1.30.0
+helm_version: v3.15.0
+
+minikube_driver: docker
+minikube_cpus: 4
+minikube_memory: 6144
+
+argocd_bootstrap_dir: /tmp/gitops-argocd
