@@ -6,13 +6,16 @@ deploy_user: RevanArturito
 kubectl_version: v1.35.1
 minikube_kubernetes_version: v1.35.1
 helm_version: v3.15.0
+argocd_install_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 minikube_driver: docker
-skip_minikube_install: true
-skip_minikube_start: true
-minikube_cpus: 2
-minikube_memory: 4096
+skip_minikube_install: false
+skip_minikube_start: false
+minikube_cpus: 4
+minikube_memory: 6144
 minikube_start_timeout: 30m
 minikube_wait_timeout: 20m
 
 argocd_bootstrap_dir: /tmp/gitops-argocd
+
+disable_firewalld_for_lab: true
