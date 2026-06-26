@@ -80,12 +80,19 @@
         url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ binary_arch }}/kubectl"
         dest: /usr/local/bin/kubectl
         mode: "0755"
+        force: true
+
+    - name: Verify kubectl binary
+      ansible.builtin.command:
+        cmd: /usr/local/bin/kubectl version --client=true
+      changed_when: false
 
     - name: Download Helm archive
       ansible.builtin.get_url:
         url: "https://get.helm.sh/helm-{{ helm_version }}-linux-{{ binary_arch }}.tar.gz"
         dest: "/tmp/helm-linux-{{ binary_arch }}.tar.gz"
         mode: "0644"
+        force: true
 
     - name: Extract Helm archive
       ansible.builtin.unarchive:
@@ -105,6 +112,12 @@
         url: "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-{{ binary_arch }}"
         dest: /usr/local/bin/minikube
         mode: "0755"
+        force: true
+
+    - name: Verify Minikube binary
+      ansible.builtin.command:
+        cmd: /usr/local/bin/minikube version
+      changed_when: false
 
     - name: Start Minikube with Docker driver
       block:
@@ -166,6 +179,13 @@
           when:
             - minikube_start.rc != 124
             - "'K8S_DOWNGRADE_UNSUPPORTED' not in minikube_start.stderr"
+
+    - name: Update Minikube kubeconfig context
+      ansible.builtin.command:
+        cmd: /usr/local/bin/minikube update-context
+      become: true
+      become_user: "{{ deploy_user }}"
+      changed_when: false
 
     - name: Enable Minikube metrics-server addon
       ansible.builtin.command:
