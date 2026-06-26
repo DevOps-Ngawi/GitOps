@@ -52,6 +52,9 @@
         groups: docker
         append: true
 
+    - name: Reset SSH connection so docker group membership is available
+      ansible.builtin.meta: reset_connection
+
     - name: Install kubectl
       ansible.builtin.get_url:
         url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ binary_arch }}/kubectl"
@@ -86,7 +89,7 @@
     - name: Start Minikube with Docker driver
       ansible.builtin.command:
         cmd: >
-          minikube start
+          /usr/local/bin/minikube start
           --driver={{ minikube_driver }}
           --cpus={{ minikube_cpus }}
           --memory={{ minikube_memory }}
@@ -97,7 +100,7 @@
 
     - name: Enable Minikube metrics-server addon
       ansible.builtin.command:
-        cmd: minikube addons enable metrics-server
+        cmd: /usr/local/bin/minikube addons enable metrics-server
       become: true
       become_user: "{{ deploy_user }}"
       register: metrics_addon
@@ -105,7 +108,7 @@
 
     - name: Ensure ArgoCD namespace exists
       ansible.builtin.command:
-        cmd: kubectl create namespace argocd
+        cmd: /usr/local/bin/kubectl create namespace argocd
       become: true
       become_user: "{{ deploy_user }}"
       register: argocd_namespace
@@ -114,7 +117,7 @@
 
     - name: Install ArgoCD manifests
       ansible.builtin.command:
-        cmd: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        cmd: /usr/local/bin/kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
       become: true
       become_user: "{{ deploy_user }}"
       register: argocd_install
@@ -122,7 +125,7 @@
 
     - name: Wait until ArgoCD Application CRD is ready
       ansible.builtin.command:
-        cmd: kubectl wait --for condition=Established crd/applications.argoproj.io --timeout=180s
+        cmd: /usr/local/bin/kubectl wait --for condition=Established crd/applications.argoproj.io --timeout=180s
       become: true
       become_user: "{{ deploy_user }}"
       changed_when: false
@@ -135,7 +138,7 @@
 
     - name: Bootstrap ArgoCD applications from copied GitOps manifests
       ansible.builtin.command:
-        cmd: kubectl apply -f "{{ argocd_bootstrap_dir }}"
+        cmd: /usr/local/bin/kubectl apply -f "{{ argocd_bootstrap_dir }}"
       become: true
       become_user: "{{ deploy_user }}"
       register: gitops_apply
@@ -144,7 +147,7 @@
   post_tasks:
     - name: Show cluster nodes
       ansible.builtin.command:
-        cmd: kubectl get nodes -o wide
+        cmd: /usr/local/bin/kubectl get nodes -o wide
       become: true
       become_user: "{{ deploy_user }}"
       register: cluster_nodes
