@@ -111,7 +111,7 @@
         - name: Start Minikube
           ansible.builtin.command:
             cmd: >
-              /usr/local/bin/minikube start
+              timeout {{ minikube_start_timeout }} /usr/local/bin/minikube start
               --driver={{ minikube_driver }}
               --kubernetes-version={{ minikube_kubernetes_version }}
               --cpus={{ minikube_cpus }}
@@ -134,7 +134,7 @@
         - name: Start Minikube after deleting incompatible profile
           ansible.builtin.command:
             cmd: >
-              /usr/local/bin/minikube start
+              timeout {{ minikube_start_timeout }} /usr/local/bin/minikube start
               --driver={{ minikube_driver }}
               --kubernetes-version={{ minikube_kubernetes_version }}
               --cpus={{ minikube_cpus }}
