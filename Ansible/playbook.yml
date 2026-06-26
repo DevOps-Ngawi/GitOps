@@ -1,0 +1,151 @@
+---
+- name: Provision AlmaLinux managed host for Kubernetes GitOps platform
+  hosts: k8s_cluster
+  become: true
+
+  pre_tasks:
+    - name: Ensure base packages are installed
+      ansible.builtin.dnf:
+        name:
+          - curl
+          - git
+          - tar
+          - conntrack
+          - socat
+          - dnf-plugins-core
+          - python3
+        state: present
+
+  tasks:
+    - name: Add Docker CE repository
+      ansible.builtin.yum_repository:
+        name: docker-ce-stable
+        description: Docker CE Stable
+        baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+        enabled: true
+        gpgcheck: true
+        gpgkey: https://download.docker.com/linux/centos/gpg
+
+    - name: Install Docker Engine
+      ansible.builtin.dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add deploy user to docker group
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        groups: docker
+        append: true
+
+    - name: Install kubectl
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+
+    - name: Download Helm archive
+      ansible.builtin.get_url:
+        url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+        dest: /tmp/helm-linux-amd64.tar.gz
+        mode: "0644"
+
+    - name: Extract Helm archive
+      ansible.builtin.unarchive:
+        src: /tmp/helm-linux-amd64.tar.gz
+        dest: /tmp
+        remote_src: true
+
+    - name: Install Helm binary
+      ansible.builtin.copy:
+        src: /tmp/linux-amd64/helm
+        dest: /usr/local/bin/helm
+        mode: "0755"
+        remote_src: true
+
+    - name: Install Minikube
+      ansible.builtin.dnf:
+        name: https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
+        state: present
+        disable_gpg_check: true
+
+    - name: Start Minikube with Docker driver
+      ansible.builtin.command:
+        cmd: >
+          minikube start
+          --driver={{ minikube_driver }}
+          --cpus={{ minikube_cpus }}
+          --memory={{ minikube_memory }}
+      become: true
+      become_user: "{{ deploy_user }}"
+      register: minikube_start
+      changed_when: "'Done!' in minikube_start.stdout or 'Starting' in minikube_start.stdout"
+
+    - name: Enable Minikube metrics-server addon
+      ansible.builtin.command:
+        cmd: minikube addons enable metrics-server
+      become: true
+      become_user: "{{ deploy_user }}"
+      register: metrics_addon
+      changed_when: "'enabled' in metrics_addon.stdout"
+
+    - name: Ensure ArgoCD namespace exists
+      ansible.builtin.command:
+        cmd: kubectl create namespace argocd
+      become: true
+      become_user: "{{ deploy_user }}"
+      register: argocd_namespace
+      changed_when: argocd_namespace.rc == 0
+      failed_when: argocd_namespace.rc != 0 and 'AlreadyExists' not in argocd_namespace.stderr
+
+    - name: Install ArgoCD manifests
+      ansible.builtin.command:
+        cmd: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+      become: true
+      become_user: "{{ deploy_user }}"
+      register: argocd_install
+      changed_when: "'created' in argocd_install.stdout or 'configured' in argocd_install.stdout"
+
+    - name: Wait until ArgoCD Application CRD is ready
+      ansible.builtin.command:
+        cmd: kubectl wait --for condition=Established crd/applications.argoproj.io --timeout=180s
+      become: true
+      become_user: "{{ deploy_user }}"
+      changed_when: false
+
+    - name: Copy ArgoCD bootstrap manifests to managed host
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../argocd/"
+        dest: "{{ argocd_bootstrap_dir }}/"
+        mode: preserve
+
+    - name: Bootstrap ArgoCD applications from copied GitOps manifests
+      ansible.builtin.command:
+        cmd: kubectl apply -f "{{ argocd_bootstrap_dir }}"
+      become: true
+      become_user: "{{ deploy_user }}"
+      register: gitops_apply
+      changed_when: "'created' in gitops_apply.stdout or 'configured' in gitops_apply.stdout"
+
+  post_tasks:
+    - name: Show cluster nodes
+      ansible.builtin.command:
+        cmd: kubectl get nodes -o wide
+      become: true
+      become_user: "{{ deploy_user }}"
+      register: cluster_nodes
+      changed_when: false
+
+    - name: Print cluster nodes
+      ansible.builtin.debug:
+        var: cluster_nodes.stdout_lines
