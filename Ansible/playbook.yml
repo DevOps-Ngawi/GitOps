@@ -107,19 +107,50 @@
         mode: "0755"
 
     - name: Start Minikube with Docker driver
-      ansible.builtin.command:
-        cmd: >
-          /usr/local/bin/minikube start
-          --driver={{ minikube_driver }}
-          --kubernetes-version={{ minikube_kubernetes_version }}
-          --cpus={{ minikube_cpus }}
-          --memory={{ minikube_memory }}
-          --wait=all
-          --wait-timeout=15m
-      become: true
-      become_user: "{{ deploy_user }}"
-      register: minikube_start
-      changed_when: "'Done!' in minikube_start.stdout or 'Starting' in minikube_start.stdout"
+      block:
+        - name: Start Minikube
+          ansible.builtin.command:
+            cmd: >
+              /usr/local/bin/minikube start
+              --driver={{ minikube_driver }}
+              --kubernetes-version={{ minikube_kubernetes_version }}
+              --cpus={{ minikube_cpus }}
+              --memory={{ minikube_memory }}
+              --wait=all
+              --wait-timeout=15m
+          become: true
+          become_user: "{{ deploy_user }}"
+          register: minikube_start
+          changed_when: "'Done!' in minikube_start.stdout or 'Starting' in minikube_start.stdout"
+
+      rescue:
+        - name: Delete incompatible existing Minikube profile
+          ansible.builtin.command:
+            cmd: /usr/local/bin/minikube delete
+          become: true
+          become_user: "{{ deploy_user }}"
+          when: "'K8S_DOWNGRADE_UNSUPPORTED' in minikube_start.stderr"
+
+        - name: Start Minikube after deleting incompatible profile
+          ansible.builtin.command:
+            cmd: >
+              /usr/local/bin/minikube start
+              --driver={{ minikube_driver }}
+              --kubernetes-version={{ minikube_kubernetes_version }}
+              --cpus={{ minikube_cpus }}
+              --memory={{ minikube_memory }}
+              --wait=all
+              --wait-timeout=15m
+          become: true
+          become_user: "{{ deploy_user }}"
+          register: minikube_start_retry
+          changed_when: "'Done!' in minikube_start_retry.stdout or 'Starting' in minikube_start_retry.stdout"
+          when: "'K8S_DOWNGRADE_UNSUPPORTED' in minikube_start.stderr"
+
+        - name: Fail with original Minikube start error
+          ansible.builtin.fail:
+            msg: "{{ minikube_start.stderr }}"
+          when: "'K8S_DOWNGRADE_UNSUPPORTED' not in minikube_start.stderr"
 
     - name: Enable Minikube metrics-server addon
       ansible.builtin.command:
