@@ -8,6 +8,8 @@ minikube_kubernetes_version: v1.35.1
 helm_version: v3.15.0
 
 minikube_driver: docker
+skip_minikube_install: true
+skip_minikube_start: true
 minikube_cpus: 2
 minikube_memory: 4096
 minikube_start_timeout: 30m

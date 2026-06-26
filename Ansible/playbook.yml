@@ -113,11 +113,13 @@
         dest: /usr/local/bin/minikube
         mode: "0755"
         force: true
+      when: not skip_minikube_install | bool
 
     - name: Verify Minikube binary
       ansible.builtin.command:
         cmd: /usr/local/bin/minikube version
       changed_when: false
+      when: not skip_minikube_install | bool
 
     - name: Start Minikube with Docker driver
       block:
@@ -179,6 +181,7 @@
           when:
             - minikube_start.rc != 124
             - "'K8S_DOWNGRADE_UNSUPPORTED' not in minikube_start.stderr"
+      when: not skip_minikube_start | bool
 
     - name: Update Minikube kubeconfig context
       ansible.builtin.command:
