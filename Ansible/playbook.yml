@@ -117,7 +117,7 @@
               --cpus={{ minikube_cpus }}
               --memory={{ minikube_memory }}
               --wait=all
-              --wait-timeout=15m
+              --wait-timeout={{ minikube_wait_timeout }}
           become: true
           become_user: "{{ deploy_user }}"
           register: minikube_start
@@ -140,17 +140,32 @@
               --cpus={{ minikube_cpus }}
               --memory={{ minikube_memory }}
               --wait=all
-              --wait-timeout=15m
+              --wait-timeout={{ minikube_wait_timeout }}
           become: true
           become_user: "{{ deploy_user }}"
           register: minikube_start_retry
           changed_when: "'Done!' in minikube_start_retry.stdout or 'Starting' in minikube_start_retry.stdout"
           when: "'K8S_DOWNGRADE_UNSUPPORTED' in minikube_start.stderr"
 
+        - name: Fail when Minikube start times out
+          ansible.builtin.fail:
+            msg: >-
+              Minikube start timed out after {{ minikube_start_timeout }}.
+              First start can take a long time while Docker pulls Kubernetes images.
+              Last output: {{ minikube_start.stdout | default('') }}
+          when:
+            - minikube_start.rc == 124
+            - "'K8S_DOWNGRADE_UNSUPPORTED' not in minikube_start.stderr"
+
         - name: Fail with original Minikube start error
           ansible.builtin.fail:
-            msg: "{{ minikube_start.stderr }}"
-          when: "'K8S_DOWNGRADE_UNSUPPORTED' not in minikube_start.stderr"
+            msg: >-
+              Minikube start failed with rc={{ minikube_start.rc }}.
+              stderr: {{ minikube_start.stderr | default('') }}
+              stdout: {{ minikube_start.stdout | default('') }}
+          when:
+            - minikube_start.rc != 124
+            - "'K8S_DOWNGRADE_UNSUPPORTED' not in minikube_start.stderr"
 
     - name: Enable Minikube metrics-server addon
       ansible.builtin.command:

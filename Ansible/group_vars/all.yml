@@ -10,6 +10,7 @@ helm_version: v3.15.0
 minikube_driver: docker
 minikube_cpus: 2
 minikube_memory: 4096
-minikube_start_timeout: 20m
+minikube_start_timeout: 30m
+minikube_wait_timeout: 20m
 
 argocd_bootstrap_dir: /tmp/gitops-argocd
