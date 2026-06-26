@@ -4,6 +4,10 @@
   become: true
 
   pre_tasks:
+    - name: Set binary architecture name
+      ansible.builtin.set_fact:
+        binary_arch: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else 'amd64' }}"
+
     - name: Ensure base packages are installed
       ansible.builtin.dnf:
         name:
@@ -50,34 +54,34 @@
 
     - name: Install kubectl
       ansible.builtin.get_url:
-        url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+        url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ binary_arch }}/kubectl"
         dest: /usr/local/bin/kubectl
         mode: "0755"
 
     - name: Download Helm archive
       ansible.builtin.get_url:
-        url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
-        dest: /tmp/helm-linux-amd64.tar.gz
+        url: "https://get.helm.sh/helm-{{ helm_version }}-linux-{{ binary_arch }}.tar.gz"
+        dest: "/tmp/helm-linux-{{ binary_arch }}.tar.gz"
         mode: "0644"
 
     - name: Extract Helm archive
       ansible.builtin.unarchive:
-        src: /tmp/helm-linux-amd64.tar.gz
+        src: "/tmp/helm-linux-{{ binary_arch }}.tar.gz"
         dest: /tmp
         remote_src: true
 
     - name: Install Helm binary
       ansible.builtin.copy:
-        src: /tmp/linux-amd64/helm
+        src: "/tmp/linux-{{ binary_arch }}/helm"
         dest: /usr/local/bin/helm
         mode: "0755"
         remote_src: true
 
     - name: Install Minikube
-      ansible.builtin.dnf:
-        name: https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
-        state: present
-        disable_gpg_check: true
+      ansible.builtin.get_url:
+        url: "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-{{ binary_arch }}"
+        dest: /usr/local/bin/minikube
+        mode: "0755"
 
     - name: Start Minikube with Docker driver
       ansible.builtin.command:
