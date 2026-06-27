@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mfaizadya/logilearn-frontend:latest
+          image: rahmahaisyah/logilearn-frontend:latest
           ports:
             - containerPort: 80
