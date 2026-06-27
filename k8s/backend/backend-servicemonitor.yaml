@@ -4,7 +4,7 @@ metadata:
   name: backend-servicemonitor
   namespace: myapp
   labels:
-    release: prometheus-stack # Allows Prometheus Operator to auto-discover this ServiceMonitor
+    release: prometheus-monitoring # Matches the actual Helm release name for auto-discovery
 spec:
   selector:
     matchLabels:
