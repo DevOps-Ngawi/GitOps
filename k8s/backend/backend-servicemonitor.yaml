@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: backend-servicemonitor
-  namespace: myapp
+  namespace: monitoring
   labels:
     release: prometheus-monitoring # Matches the actual Helm release name for auto-discovery
 spec:
