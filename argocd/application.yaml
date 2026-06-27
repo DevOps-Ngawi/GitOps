@@ -4,16 +4,13 @@ metadata:
   name: grafana-monitoring
   namespace: argocd
 spec:
-  project: myapp-project
+  project: default
   source:
     chart: grafana
     repoURL: https://grafana.github.io/helm-charts
     targetRevision: 11.4.0
     helm:
       values: |
-        service:
-          type: NodePort
-          nodePort: 30030
         sidecar:
           dashboards:
             enabled: true
